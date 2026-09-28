@@ -1,0 +1,28 @@
+name: bench
+
+on: [push]
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONIOENCODING: utf-8                  # from their workflow
+    steps:
+      - uses: actions/checkout@v5
+      - uses: snok/install-poetry@v1           # from their workflow: installs Poetry
+        with:
+          version: "2.0.1"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: "poetry"                      # reuses downloaded packages between runs
+      - run: poetry install --all-extras       # from their workflow
+      - run: poetry run pip install git+https://github.com/ashmeenkhaira/test-splitter   # ours
+      - run: poetry run coverage run -m pytest --durations=10 -m "not linting and not super_slow and not flaky"   # their exact command
+      - uses: actions/upload-artifact@v7       # ours, same as networkx
+        if: always()
+        with:
+          name: durations
+          path: .test-durations.json
+          include-hidden-files: true
